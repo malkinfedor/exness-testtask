@@ -33,11 +33,17 @@ CI server - Jenkins.
 - ansible role _**eks-terraform**_ проверяет состояние кластера и, если необходимо, разворачивает кластер с помощью terraform (terraform files находятся в папке _./terraform_)
 - ansible role _**deploy**_ разворачивает приложение в созданном кластере. 
 
+
+**Приложение** и сопутствующие файлы (Dockerfile, kubernetes manifest) находятся в папке ./app. 
+Для сборки docker image использовалась следующая команда:
+`docker build -f ./app/Dockerfile -t malkinfedor/php-fpm ./app/`
+
 Для развертывания приложения написан kubernetes manifest, который содержит все необходимые сущности для развертывания приложения, а именно:
 - _**ConfigMap**_ с кастомными настройками для nginx;
 - _**Deployment**_ для развертывания приложения;
 - _**Service**_ для доступа к прилжению из внешней сети Internet;
 - _**Ingress**_ для доступа к приложению по желаемому URL.
+
 
 Принято решение создать _Ingress_ и _Service_, так как в текущей реализации не автоматизировано создание DNS записи для _Ingress_ (добавлен пункт в ToDo List).
 
@@ -49,7 +55,7 @@ CI server - Jenkins.
 ---
 ### Процесс подготовки окружения.
 1. `git clone https://github.com/malkinfedor/exness-testtask`
-2. Установить ansible посредством скрипта `sudo scripts/ansible_install.sh`
+2. Установить ansible посредством скрипта `sudo ./scripts/ansible_install.sh`
 3. Авторизоваться под пользователем, под которым будет запускатся ansible playbook в консоли AWS.
 Можно использовать один из следующих способов:
 - Создать в папке $HOME требуемого пользователя два файла: _$HOME/.aws/credentials_ и _$HOME/.aws/config_ со следующим содержимым
