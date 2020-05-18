@@ -1,0 +1,2 @@
+terraform_project_dir: "../eks-terraform"
+kubernetes_deployment_file: "../app/php-app.yml"

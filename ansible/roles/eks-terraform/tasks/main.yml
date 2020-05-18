@@ -1,0 +1,33 @@
+- name: Apply eks-terraform project 
+  terraform:
+    project_path: '{{ terraform_project_dir }}'
+    state: present
+    force_init: true
+
+- name: Create dir for kube config 
+  file:
+    path: '~/.kube'
+    state: directory
+    mode: '0755'
+    force: yes
+
+- name: Create kubeconfig
+  shell:
+    chdir: '{{ terraform_project_dir }}' 
+    cmd: terraform output kubeconfig > ~/.kube/config
+
+- name: Change context to the created cluster
+  shell:
+    cmd: kubectl config use-context aws
+
+- name: Check that kubectl work correctly
+  shell:
+    cmd: kubectl get pod --all-namespaces
+
+- name: Deploy nginx-ingress the created cluster
+  k8s:
+    state: present
+    src:  "{{ role_path }}/files/nginx-ingress-deploy.yml"
+  tags:
+  - deploy-ingress
+

@@ -1,0 +1,9 @@
+- name: 'Install Python PIP'
+  become: 'yes'
+  apt:
+    pkg: [python-pip,python3-pip]
+    state: latest
+
+- name: Install necessary python packages
+  pip:
+    name: [jmespath, openshift-client, openshift]

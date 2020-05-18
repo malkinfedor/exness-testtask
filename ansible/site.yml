@@ -1,0 +1,25 @@
+- hosts: worker
+  connection: local
+  remote_user: '{{ user }}'
+  become: yes
+  roles: 
+  - tools
+  tags:
+  - tools
+
+- hosts: worker
+  connection: local
+  remote_user: '{{ user }}'
+  roles:
+  - eks-terraform
+  tags:
+  - eks-terraform
+
+- hosts: worker
+  connection: local
+  remote_user: '{{ user }}'
+  roles:
+  - deploy
+  tags:
+  - deploy-app
+

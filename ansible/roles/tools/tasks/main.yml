@@ -1,0 +1,4 @@
+- include: general.yml
+- include: terraform.yml
+- include: kubectl.yml
+- include: aws-iam-authenticator.yml

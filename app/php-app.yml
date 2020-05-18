@@ -1,0 +1,129 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-config
+  namespace: default
+data:
+  nginx.conf: |
+    events {
+    }
+    http {
+      server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        # Set nginx to serve files from the shared volume!
+        root /var/www/html;
+        index index.php index.html index.htm;
+        server_name _;
+        location / {
+          try_files $uri $uri/ =404;
+        }
+        location ~ \.php$ {
+          include fastcgi_params;
+          fastcgi_param REQUEST_METHOD $request_method;
+          fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+          fastcgi_pass 127.0.0.1:9000;
+        }
+      }
+    }
+
+---
+apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: php-app
+  namespace: default
+  labels:
+    app: php-app
+spec:
+  selector:
+    matchLabels:
+      app: php-fpm
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: php-fpm
+    spec:
+      containers:
+        # Our PHP-FPM application
+      - image: malkinfedor/php-app:latest
+        name: php-app
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: shared-files
+          mountPath: /var/www/html
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "cp -r /app/. /var/www/html"]
+
+        livenessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        # Nginx
+      - image: nginx:stable-alpine
+        name: nginx
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: shared-files
+          mountPath: /var/www/html
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+      volumes:
+      - name: shared-files
+        emptyDir: {}
+      - name: nginx-config-volume
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-php-fpm
+  namespace: default
+  labels:
+    app: nginx-php-fpm
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+     app: php-fpm
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: php-ingress
+  namespace: default
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: php-test.asusin.ru
+    http:
+      paths:
+        - path: /
+          backend:
+            serviceName: nginx-php-fpm
+            servicePort: 80

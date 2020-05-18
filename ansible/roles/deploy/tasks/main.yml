@@ -1,0 +1,8 @@
+- name: Deploy php-app to a k8s cluster
+  k8s:
+    state: present
+    definition: "{{ lookup('file', '{{ kubernetes_deployment_file }}') }}"
+
+- name: Check app deployed correctly
+  shell:
+    cmd: kubectl get pod
